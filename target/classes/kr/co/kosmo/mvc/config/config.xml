@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE configuration
+ PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<typeAliases>
+	<!-- =========================== -->
+		<typeAlias type="kr.co.kosmo.mvc.vo.MembershipVO"
+			alias="mshipvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.MemberVO" alias="memvo" />
+	<!-- =========================== -->
+		<typeAlias type="kr.co.kosmo.mvc.vo.BookLoggerDTO"
+			alias="booklogvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.LoginLoggerDTO"
+			alias="logvo" />
+	<!-- =========================== -->
+		<typeAlias type="kr.co.kosmo.mvc.vo.HostVO" alias="hvo" />
+	<!-- =========================== -->
+		<typeAlias type="kr.co.kosmo.mvc.vo.OverseaVO" alias="ovo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.LocalVO" alias="lvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.ReviewVO" alias="revo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.BookVO" alias="bookvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.ItemVO" alias="itemvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.ChargeMVO"
+			alias="chargevo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.InterestVO"
+			alias="interestvo" />
+	<!-- =========================== -->
+		<typeAlias type="kr.co.kosmo.mvc.vo.NoticeVO" alias="nvo" />
+	<!-- =========================== -->
+		<typeAlias type="kr.co.kosmo.mvc.vo.SurveyVO" alias="survo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.SurveyContentVO"
+			alias="subvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.SurveyCheckVO"
+			alias="scvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.SurveyCountVO"
+			alias="stvo" />
+	<!-- =========================== -->
+		<typeAlias type="kr.co.kosmo.mvc.vo.SendMailVO"
+			alias="mailvo" />
+	<!-- =========================== -->
+		<typeAlias type="kr.co.kosmo.mvc.vo.DiaryVO" alias="diaryVO" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.SchedulerVO"
+			alias="schedulevo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.RestaurantVO"
+			alias="restvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.PageSearchDTO" alias="pgSvo" />
+	<!-- =========================== -->
+
+	</typeAliases>
+
+</configuration>

@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="book">
+	<!-- ========================================================== -->
+	<!-- book logging mapper -->
+	<insert id="booklogger_in" parameterType="booklogvo">
+		insert into booklog
+		VALUES(booklog_seq.nextval,#{bid},#{mid},#{status},#{pay},#{spoint},#{upoint},sysdate)
+	</insert>
+	<!-- ========================================================== -->
+	<!-- insert -->
+	<!-- reserv -->
+	<insert id="addBook" parameterType="bookvo">
+		Insert Into
+		book_semi
+		Values(book_semi_seq.nextVal,#{mid},#{lid},#{itype},#{bstatus},#{sdate},#{edate},sysdate)
+	</insert>
+	<!-- reserv + ch : 예약시퀀스 =결제시퀀스 -->
+	<insert id="addBookCh" parameterType="chargevo">
+		<selectKey keyProperty="chno" resultType="int"
+			order="BEFORE">
+			select book_semi_seq.currVal from dual
+		</selectKey>
+		Insert Into chargeM_semi Values(#{chno},#{chtype},#{chpay},#{usepoint},sysdate)
+	</insert>
+	<!-- ========================================================== -->
+	<!-- list => 예약 + 결제 : 리스트 TOP3 -->
+	<resultMap type="bookvo" id="bookchListRank">
+		<id property="bid" column="bid" javaType="int" />
+		<result property="mid" column="mid" />
+		<result property="bdate" column="bdate" />
+		<result property="sdate" column="sdate" />
+		<result property="edate" column="edate" />
+		<association property="charge" column="chno"
+			javaType="chargevo">
+			<id property="chno" column="chno" javaType="int" />
+			<result property="chtype" column="chtype" />
+			<result property="chpay" column="chpay" javaType="int" />
+		</association>
+		<association property="local" column="lno" javaType="lvo">
+			<id property="lno" column="lno" javaType="int" />
+			<result property="larea" column="larea" />
+			<result property="ltitle" column="ltitle" />
+			<result property="limg" column="limg" />
+		</association>
+	</resultMap>
+	<select id="listBookRank" parameterType="bookvo"
+		resultMap="bookchListRank">
+		SELECT bid, bdate, sdate, edate, chtype, chpay, larea, ltitle, limg
+		FROM (
+		SELECT rownum rn, b.bid, to_char(b.bdate, 'yyyy/mm/dd') bdate,
+		to_char(b.sdate, 'yyyy/mm/dd') sdate, to_char(b.edate, 'yyyy/mm/dd')
+		edate,
+		c.chtype, c.chpay,
+		l.larea, l.ltitle, l.limg
+		FROM book_semi b,
+		chargeM_semi c, local_semi l
+		WHERE b.bid = c.chno AND b.lid = l.lno AND
+		b.mid=#{mid}
+		ORDER BY b.bdate DESC
+		)
+		<if test="listchk != null">
+			<where>
+				<choose>
+					<when test="listchk == 1">
+						rn <![CDATA[>]]>=
+						1 and rownum <![CDATA[<]]>
+						4
+					</when>
+					<when test="listchk == 2">
+						rn <![CDATA[>]]>=
+						1
+					</when>
+				</choose>
+			</where>
+		</if>
+	</select>
+	<!-- ========================================================== -->
+	<!-- update : 예약수정 + 결제수정 + 포인트수정(예정) -->
+	<select id="updateBookForm" parameterType="int"
+		resultType="bookvo">
+		select
+		bid,lid,itype,sdate,edate
+		from book_semi b
+		where bid =
+		#{bid}
+	</select>
+	<!-- UPDATE 멤버 -->
+	<update id="updateBook" parameterType="bookvo">
+		update book_semi set
+		itype=#{itype},
+		sdate=#{sdate},
+		edate=#{edate},
+		bstatus=#{bstatus},
+		bdate=sysdate
+		where
+		bid=#{bid}
+	</update>
+	<update id="updateBookCh" parameterType="chargevo">
+		update chargeM_semi set
+		chtype=#{chtype},
+		chpay=#{chpay},
+		chdate=sysdate
+		where chno=#{chno}
+	</update>
+
+	<!-- UPDATE 호스트 -->
+	<update id="updateBookHost" parameterType="bookvo">
+		update book_semi set
+		bstatus=#{bstatus}
+		where
+		bid=#{bid}
+	</update>
+
+	<!-- ========================================================== -->
+	<!-- 예약취소 로그 남기기 위해 Detail => 기존 로그에서 뽑아오기(예약/수정) -->
+	<select id="delBookforLog" parameterType="int"
+		resultType="booklogvo">
+		SELECT mid, status, pay, spoint, upoint, btime
+		FROM (
+		SELECT mid,
+		status, pay, spoint, upoint, btime
+		FROM booklog
+		WHERE bid = #{bid}
+		ORDER BY btime
+		DESC
+		)
+		WHERE ROWNUM = 1
+	</select>
+	<!-- delete => 예약취소 + 결제내역삭제 같이됨 + 포인트 추가된것 삭제(예정) -->
+	<delete id="delBook" parameterType="bookvo">
+		delete from book_semi where
+		bid=#{bid}
+	</delete>
+	<!-- ========================================================== -->
+	<!-- 날짜제한 : 예약일시/결제금액 이용해 => 수정 및 취소가능 여부&환불금액 구하기 -->
+	<resultMap type="bookvo" id="updelLimit">
+		<id property="bid" column="bid" javaType="int" />
+		<result property="sdate" column="sdate" />
+		<result property="uplimit" column="uplimit" />
+		<result property="dellimit" column="dellimit" />
+		<result property="datediff" column="datediff" />
+		<association property="charge" column="chno"
+			javaType="chargevo">
+			<id property="chno" column="chno" javaType="int" />
+			<result property="chpay" column="chpay" javaType="int" />
+		</association>
+	</resultMap>
+	<select id="changeLimit" parameterType="int"
+		resultMap="updelLimit">
+		SELECT b.sdate sdate, sysdate,
+		(CASE
+		WHEN (to_date(b.sdate,
+		'YYYY-MM-DD') - to_date(sysdate, 'YYYY-MM-DD')) <![CDATA[<]]>=
+		3 THEN 1
+		ELSE 0
+		END) as uplimit,
+		(to_date(b.sdate, 'YYYY-MM-DD') -
+		to_date(sysdate, 'YYYY-MM-DD')) as datediff,
+		(CASE
+		WHEN
+		(to_date(b.sdate, 'YYYY-MM-DD') - to_date(sysdate, 'YYYY-MM-DD')) <![CDATA[<]]>=
+		1 THEN c.chpay * 0
+		WHEN (to_date(b.sdate, 'YYYY-MM-DD') -
+		to_date(sysdate, 'YYYY-MM-DD')) <![CDATA[<]]>=
+		3 THEN c.chpay * 0.5
+		WHEN (to_date(b.sdate, 'YYYY-MM-DD') -
+		to_date(sysdate, 'YYYY-MM-DD')) <![CDATA[<]]>=
+		5 THEN c.chpay * 0.7
+		ELSE c.chpay
+		END) as dellimit
+		FROM book_semi b,
+		chargeM_semi c
+		WHERE b.bid=c.chno and b.bid = #{bid}
+	</select>
+	<!-- ============================================================ -->
+	<!-- 마이페이지 => 예약내역 -->
+	<resultMap type="bookvo" id="useHistoryList">
+		<id property="bid" column="bid" javaType="int" />
+		<result property="sdate" column="sdate" />
+		<result property="bookcnt" column="bookcnt" />
+		<association property="charge" column="chno"
+			javaType="chargevo">
+			<id property="chno" column="chno" javaType="int" />
+			<result property="chpay" column="chpay" javaType="int" />
+			<result property="maxpay" column="maxpay" javaType="int" />
+			<result property="total" column="total" javaType="int" />
+		</association>
+	</resultMap>
+	<select id="useHistory" parameterType="int"
+		resultMap="useHistoryList">
+		select count(b.sdate) bookcnt,max(chpay) maxpay,sum(chpay)
+		total from book_semi b,
+		chargeM_semi c where b.bid = c.chno and
+		mid=#{mid}
+	</select>
+	<!-- ========================================================== -->
+	<!-- chart => tourcount : 월별 여행비율 => 차트 -->
+	<select id="tourcount" parameterType="int" resultType="bookvo">
+		SELECT
+		TO_CHAR(sdate, 'yyyy-mm') month,mid,COUNT(*) tcount
+		FROM book_semi
+		where mid=#{mid}
+		GROUP BY
+		TO_CHAR(sdate, 'yyyy-mm'), mid
+		ORDER by 1 desc
+	</select>
+
+	<!-- chart => visitSpot : 방문 여행지 => 차트 -->
+	<resultMap type="bookvo" id="visitSpotCount">
+		<result property="lid" column="lid" javaType="int" />
+		<association property="local" column="bno" javaType="lvo">
+			<id property="lno" column="lno" javaType="int" />
+			<result property="larea" column="larea" />
+			<result property="localcnt" column="localcnt" javaType="int" />
+		</association>
+	</resultMap>
+	<select id="visitSpot" parameterType="int"
+		resultMap="visitSpotCount">
+		select l.larea,COUNT(l.larea)
+		localcnt
+		from book_semi b,
+		local_semi l
+		where b.lid = l.lno and
+		mid=#{mid}
+		GROUP BY l.larea
+		ORDER by
+		localcnt desc
+	</select>
+
+	<!-- chart => periodMax : 최대 여행기간 => 차트 -->
+	<select id="periodMax" parameterType="int" resultType="bookvo">
+		select to_char(sdate,'YY/MM/DD') sdate,to_date(edate,
+		'YYYY-MM-DD')-to_date(sdate, 'YYYY-MM-DD') datediff
+		from book_semi
+		where mid=#{mid} and rownum <![CDATA[<]]>
+		11
+		ORDER by sdate
+	</select>
+	<!-- chart => costType : 주 결제 방식 => 차트 -->
+	<resultMap type="bookvo" id="costTypeCount">
+		<id property="bid" column="bid" javaType="int" />
+		<association property="charge" column="chno"
+			javaType="chargevo">
+			<id property="chno" column="chno" javaType="int" />
+			<result property="chtype" column="chtype" />
+			<result property="ctypecnt" column="ctypecnt" javaType="int" />
+		</association>
+	</resultMap>
+	<select id="costType" parameterType="int"
+		resultMap="costTypeCount">
+		SELECT c.chtype, COUNT(*) as ctypecnt
+		FROM book_semi b,
+		chargeM_semi c
+		WHERE b.bid = c.chno and mid=#{mid}
+		GROUP BY c.chtype
+		ORDER BY ctypecnt DESC
+	</select>
+
+	<!-- chart => costTotal : 월별 여행비율 => 차트 -->
+	<resultMap type="bookvo" id="costTotalSum">
+		<id property="bid" column="bid" javaType="int" />
+		<result property="sdate" column="sdate" />
+		<association property="charge" column="chno"
+			javaType="chargevo">
+			<id property="chno" column="chno" javaType="int" />
+			<result property="chpay" column="chpay" javaType="int" />
+			<result property="total" column="total" javaType="int" />
+		</association>
+	</resultMap>
+	<select id="costTotal" parameterType="int"
+		resultMap="costTotalSum">
+		SELECT to_char(b.sdate,'YYYY-MM-DD') sdate,c.chpay,
+		sum(c.chpay) over(ORDER BY b.sdate) AS total
+		FROM book_semi b,
+		chargeM_semi c
+		WHERE b.bid = c.chno AND mid = #{mid}
+		GROUP BY
+		b.sdate,c.chpay
+	</select>
+	<!-- ========================================================== -->
+	<!-- 예약 횟수에 따른 국내여행 TOP3 리스트 -->
+	<resultMap type="bookvo" id="localRank">
+		<result property="lid" column="lid" javaType="int" />
+		<association property="local" column="bno" javaType="lvo">
+			<id property="lno" column="lno" javaType="int" />
+			<result property="htcode" column="htcode" javaType="int" />
+			<result property="lprice" column="lprice" javaType="int" />
+			<result property="tsort" column="tsort" javaType="int" />
+			<result property="larea" column="larea" />
+			<result property="ltitle" column="ltitle" />
+			<result property="lcontent" column="lcontent" />
+			<result property="limg" column="limg" />
+		</association>
+	</resultMap>
+	<select id="rankLocal" resultMap="localRank">
+		select * from (
+		select lid, count(bid) as cntSum from book_semi b,
+		local_semi l where
+		b.lid = l.lno group by lid order by
+		cntSum desc
+		) a,
+		local_semi l where a.lid = l.lno and rownum <![CDATA[<]]>
+		4
+	</select>
+
+	<!-- ========================================================== -->
+	<!-- 예약폼 적용_국내여행 -->
+	<resultMap type="lvo" id="localTotal">
+		<id property="lno" column="lno" javaType="int" />
+		<result property="htcode" column="htcode" javaType="int" />
+		<result property="lprice" column="lprice" javaType="int" />
+		<result property="tsort" column="tsort" javaType="int" />
+		<result property="larea" column="larea" />
+		<result property="ltitle" column="ltitle" />
+		<result property="lcontent" column="lcontent" />
+		<result property="limg" column="limg" />
+		<collection property="item" javaType="java.util.List"
+			ofType="itemvo">
+			<result property="lid" column="lid" javaType="int" />
+			<result property="iname" column="iname" />
+			<result property="iprice" column="iprice" javaType="int" />
+			<result property="iimg" column="iimg" />
+			<result property="istock" column="istock" javaType="int" />
+		</collection>
+	</resultMap>
+	<select id="detailLocalTotal" resultMap="localTotal"
+		parameterType="int">
+		select * from local_semi l, item_semi i where l.lno =
+		i.lid and l.lno = #{lno }
+	</select>
+
+
+	<!-- 객실 정보 -->
+	<select id="detailItem" resultType="itemvo" parameterType="int">
+		select lid, itype from item_semi where lid = #{lid }
+	</select>
+	<!-- 객실 확인 -->
+	<select id="checkItem" resultType="int" parameterType="itemvo">
+		select count(*) from item_semi where lid = #{lid } and
+		itype = #{itype}
+		and istock <![CDATA[<]]>=
+		(
+		select count(*) from book_semi
+		where lid = #{lid } and itype = #{itype
+		}
+		and (sdate <![CDATA[<]]>=
+		#{sdate } and edate >= #{sdate }
+		or sdate <![CDATA[<]]>=
+		#{edate } and edate >= #{edate })
+		)
+	</select>
+	<!-- 숙박일수 받기 -->
+	<select id="getBookCnt" resultType="int" parameterType="itemvo">
+		select
+		round(31 * months_between(
+		to_date(#{edate }, 'yyyy-mm-dd'),
+		to_date(#{sdate }, 'yyyy-mm-dd')
+		), 0) + 1 from dual
+	</select>
+
+	<!-- ========================================================== -->
+	<!-- calendar -->
+	<select id="bookCalendar" resultType="bookvo">
+		select * from book_semi
+	</select>
+
+	<!-- ========================================================== -->
+	<!-- hostBookList : 상태가 각각 '예약대기'/'예약확정'/'체크인'/'체크아웃' 인 예약내역만 출력 -->
+	<resultMap type="lvo" id="hostBookCheck">
+		<id property="lno" column="lno" javaType="int" />
+		<result property="ltitle" column="ltitle" />
+		<result property="htcode" column="htcode" />
+		<result property="mname" column="mname" />
+		<result property="mphone" column="mphone" />
+		<collection property="book" javaType="java.util.List"
+			ofType="bookvo">
+			<id property="bid" column="bid" javaType="int" />
+			<result property="lid" column="lid" />
+			<result property="sdate" column="sdate" />
+			<result property="edate" column="edate" />
+			<result property="bstatus" column="bstatus" />
+		</collection>
+	</resultMap>
+	<select id="hostBookList" parameterType="hvo"
+		resultMap="hostBookCheck">
+		select DISTINCT b.bid,mname,mphone,
+		l.lno,l.ltitle,
+		to_char(b.sdate, 'yyyy/mm/dd')sdate,to_char(b.edate,
+		'yyyy/mm/dd')edate,b.bstatus
+		from book_semi b, local_semi l, host_semi
+		h,
+		(select mname,mphone from book_semi b, member_semi m where b.mid =
+		m.mnum)
+		where b.lid = l.lno and h.hno=l.htcode
+		and h.hno = #{hno} and
+		b.bstatus=#{bstatus}
+		order by b.bid
+	</select>
+	<!-- hostBookDelList : 취소된 예약내역만 출력 -->
+	<select id="hostBookDelList" resultType="booklogvo">
+		SELECT bid, mid, status, pay, spoint, btime
+		FROM booklog
+		WHERE status = '취소'
+		ORDER BY btime DESC
+	</select>
+</mapper>

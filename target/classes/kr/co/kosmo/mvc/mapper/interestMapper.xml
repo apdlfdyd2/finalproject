@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="interest">
+	<insert id="addCart">
+		insert into interest_semi
+		values(interest_semi_seq.nextVal, #{mid }, #{lid }, sysdate)
+	</insert>
+	
+	<select id="listCart" parameterType="int" resultType="lvo">
+		select *
+		from (
+		select rownum r_num, a.* from (
+		select l.limg, l.lprice, l.ltitle, l.lcontent
+		from local_semi l, interest_semi i where l.lno = i.lid and i.mid =
+		#{mid } order by 1 desc
+		) a
+		) where r_num between #{startNum } and #{endNum }
+	</select>
+	
+	<!-- 페이징처리 -->
+	<select id="countCart" resultType="int">
+		select count(*) from
+		local_semi l, interest_semi i where l.lno = i.lid and i.mid = #{mid }
+	</select>
+</mapper>

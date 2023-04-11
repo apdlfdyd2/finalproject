@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE configuration
+ PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<typeAliases>
+		<typeAlias type="kr.co.kosmo.mvc.vo.MemberVO" alias="memvo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.ChargeMVO"
+			alias="chargevo" />
+		<typeAlias type="kr.co.kosmo.mvc.vo.MembershipVO"
+			alias="mshipvo" />
+
+		<typeAlias type="kr.co.kosmo.mvc.vo.HostVO"
+			alias="hvo" />
+
+		<typeAlias type="kr.co.kosmo.mvc.vo.NoticeVO"
+			alias="nvo" />
+
+		<typeAlias type="kr.co.kosmo.mvc.vo.LocalVO"
+			alias="lvo" />
+	</typeAliases>
+
+</configuration>

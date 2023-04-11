@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="review">
+	<insert id="addReview" parameterType="revo">
+		insert into review_semi
+		VALUES(review_semi_seq.nextVal,#{recode},#{retitle},#{rewriter},#{recontent},sysdate,#{star})
+	</insert>
+
+	<select id="cntReview" resultType="int" parameterType="String">
+		select count(*) from review_semi where rewriter=#{rewriter}
+	</select>
+	
+	<select id="listReview" resultType="revo" parameterType="revo">
+		select reno,recode,retitle,rewriter,recontent,redate,star from
+		review_semi 
+		<if test="listchk != null">
+			<where>
+				<choose>
+					<when test="listchk == 1">
+						recode=#{recode}
+					</when>
+					<when test="listchk == 2">
+						rewriter=#{rewriter}
+					</when>
+				</choose>
+			</where>
+		</if>
+		order by reno desc
+	</select>
+
+	<select id="getstarAvg" parameterType="int" resultType="int">
+		select
+		round(AVG(NVL(star,0))) as starAvg from review_semi where
+		recode=#{recode}
+	</select>
+</mapper>

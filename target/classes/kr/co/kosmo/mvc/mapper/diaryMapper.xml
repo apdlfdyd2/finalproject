@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="diary">
+	<insert id="addDiary" parameterType="diaryVO">
+		insert into diary_final
+		VALUES(diary_final_seq.nextVal,#{dtitle},#{dwriter},#{dcontent},#{dimg},#{dtag},sysdate)
+	</insert>
+
+	<select id="listDiary" resultType="diaryVO"
+		parameterType="String">
+		select
+		dno,dtitle,dwriter,dimg,dtag from diary_final
+		where dwriter=#{dwriter}
+		order by 1 desc
+	</select>
+
+	<update id="updateDiary" parameterType="diaryVO">
+		update diary_final set
+		dtitle=#{dtitle},dcontent=#{dcontent},dimg=#{dimg},dtag=#{dtag} where
+		dno=#{dno}
+	</update>
+
+	<select id="detailDiary" resultType="diaryVO"
+		parameterType="int">
+		select dno,dtitle,dwriter,dcontent,dimg,dtag,ddate from
+		diary_final where
+		dno=#{dno}
+	</select>
+
+	<delete id="delDiary" parameterType="int">
+		delete from diary_final
+		where dno=#{dno}
+	</delete>
+</mapper>

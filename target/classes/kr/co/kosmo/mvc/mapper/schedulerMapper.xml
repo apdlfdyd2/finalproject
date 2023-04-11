@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="scheduler">
+	<insert id="scheduleInsert" parameterType="schedulevo">
+		insert into
+		schedule_final
+		VALUES(SCHEDULE_FINAL_SEQ.nextval,#{scmem},#{sclist},sysdate)
+	</insert>
+
+	<select id="scheduleList" resultType="schedulevo" parameterType="String">
+		select scno,sclist,scdate from schedule_final where scmem=#{scmem} order by 1 desc
+	</select>
+	
+	
+	
+</mapper>

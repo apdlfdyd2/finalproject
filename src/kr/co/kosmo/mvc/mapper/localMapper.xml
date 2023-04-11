@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="local">
+	<insert id="addlocal" parameterType="lvo">
+		insert into local_semi
+		VALUES(local_semi_seq.nextVal,#{larea},#{ltitle},#{lcontent},#{limg},#{htcode},#{lprice},#{tsort},#{lkeyword},sysdate)
+	</insert>
+
+	<insert id="addItem" parameterType="java.util.List">
+		<!-- id -> Primary key -->
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			select
+			local_semi_seq.currVal from dual
+		</selectKey>
+
+		<!-- id -> Foreign key -->
+		<foreach item="e" collection="list" open="insert all"
+			close="select * from dual">
+			into item_semi values(#{id }, #{e.itype },#{e.iname },
+			#{e.iprice }, #{e.iimg }, #{e.istock })
+		</foreach>
+	</insert>
+
+
+
+
+
+	<!-- list : Member용
+	<select id="listlocal" resultType="lvo">
+		select
+		l.lno,l.larea,l.ltitle,l.lcontent,l.limg,l.lprice,round(avg(r.star))
+		starAvg,count(r.reno) renoCnt from local_semi l, review_semi r
+		where
+		l.lno=r.recode(+) group by
+		l.lno,l.larea,l.ltitle,l.lcontent,l.limg,l.lprice
+	</select> -->
+	<!-- test start -->
+	<select id="listlocal" resultType="lvo" parameterType="pgSvo">
+		select l.lno,l.larea,l.ltitle,l.lcontent,l.limg,l.lprice,round(avg(r.star))
+		starAvg,count(r.reno) renoCnt from local_semi l, review_semi r 
+		<if test="searchType != null">
+			<where>
+				<choose>
+					<when test="searchType == 1">
+						l.lno=r.recode(+) and l.larea like '%'|| #{searchValue} ||'%' 
+					</when>
+					<when test="searchType == 2">
+						l.lno=r.recode(+) and substr(l.lkeyword,instr(l.lkeyword,'#',1,4)+1,2) like '%'|| #{searchValue} ||'%' 
+					</when>
+					
+				</choose>
+			</where>
+			group by
+			l.lno,l.larea,l.ltitle,l.lcontent,l.limg,l.lprice
+		</if>
+		<if test="searchType == null">
+			where l.lno=r.recode(+)
+			group by
+			l.lno,l.larea,l.ltitle,l.lcontent,l.limg,l.lprice
+		</if>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	<!-- test end -->
+	<!-- list : Host용 -->
+	<select id="holistlocal" parameterType="int" resultType="lvo">
+		select
+		l.lno,l.larea,l.ltitle,l.lcontent,l.limg,l.lprice,round(avg(r.star))
+		starAvg,count(r.reno) renoCnt from local_semi l, review_semi r,host_semi h
+		where
+        hno=#{hno} and h.hno=l.htcode and 
+        l.lno=r.recode(+)
+        group by
+		l.lno,l.larea,l.ltitle,l.lcontent,l.limg,l.lprice
+	</select>
+
+	<select id="detaillocal" resultType="lvo" parameterType="int">
+		select
+		lno,larea,ltitle,lcontent,limg,lprice from local_semi where
+		lno=#{lno}
+	</select>
+
+	<delete id="dellocal" parameterType="int">
+		delete from local_semi where
+		lno=#{lno}
+	</delete>
+
+	<update id="modifylocal" parameterType="lvo">
+		update local_semi
+		set
+		larea=#{larea},
+		ltitle=#{ltitle},
+		lcontent=#{lcontent},
+		limg=#{limg},
+		lprice=#{lprice}
+		where lno=#{lno}
+	</update>
+
+	<select id="showList" resultType="lvo">
+		SELECT lno,ltitle,lprice from
+		local_semi
+	</select>
+
+	<!-- 별점 평균차트 -->
+	<resultMap type="lvo" id="reviewStarChart">
+		<id property="lno" column="lno" javaType="int" />
+
+		<collection property="review" javaType="java.util.List"
+			ofType="revo">
+			<result property="star" column="star" javaType="int" />
+			<result property="starcnt" column="starcnt" javaType="int" />
+		</collection>
+	</resultMap>
+	<select id="chartForReview" parameterType="int"
+		resultMap="reviewStarChart">
+		select lo.lno,re.star,count(re.star) as starcnt from
+		local_semi lo,review_semi re
+		where lo.lno=re.recode and lno=#{lno}
+		GROUP BY lo.lno,re.star order by 1 desc
+	</select>
+
+
+
+
+</mapper>

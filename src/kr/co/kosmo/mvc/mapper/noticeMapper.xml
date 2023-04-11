@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="notice">
+	<insert id="add" parameterType="nvo">
+		Insert Into notice
+		Values(notice_semi_seq.nextVal,#{nsub},#{nwriter},#{ncontent},sysdate,#{macode})
+	</insert>
+
+
+	<select id="list" resultType="nvo">
+		select * from notice order by 1 desc
+	</select>
+	
+	<select id="totalCount" resultType="int" parameterType="pgSvo">
+		select count(*) from notice
+		<if test="searchValue != null and searchType != null">
+			<where>
+				<choose>
+					<when test="searchType == 1">
+						nsub like '%'|| #{searchValue} ||'%'
+					</when>
+					<when test="searchType == 2">
+						nwriter like '%'|| #{searchValue} ||'%'
+					</when>
+				</choose>
+			</where>
+		</if>
+	</select>
+	
+	
+	<select id="listpage" resultType="nvo" parameterType="pgSvo">
+		select nnum,
+		<if test="searchValue != null and searchType != null">
+			<choose>
+				<when test="searchType == 1">
+		     <![CDATA[ 
+		      replace(nsub,#{searchValue},'<span style="color:orange; font-weight: bold;">${searchValue}</span>') nsub,nwriter,
+		       ]]>
+				</when>
+				<when test="searchType == 2">
+		     <![CDATA[ 
+		      nsub,replace(nwriter,#{searchValue},'<span style="color:pink; font-weight: bold;">${searchValue}</span>') nwriter,
+		       ]]>
+				</when>
+				<otherwise>
+					nsub,nwriter,
+				</otherwise>
+			</choose>
+		</if>
+		ncontent,ndate,macode from (
+		select rownum r_num, a.* from (
+		select nnum,nsub,nwriter,ncontent,ndate,macode from notice
+		<if test="searchValue != null and searchType != null">
+			<where>
+				<choose>
+					<when test="searchType == 1">
+						nsub like '%'|| #{searchValue} ||'%'
+					</when>
+					<when test="searchType == 2">
+						nwriter like '%'|| #{searchValue} ||'%'
+					</when>
+				</choose>
+			</where>
+		</if>
+		order by 1 desc
+		) a
+		) where r_num BETWEEN #{begin} and #{end}
+	</select>
+</mapper>

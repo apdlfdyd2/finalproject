@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+	<aop:aspectj-autoproxy />
+
+	<!-- @Component : 일반 빈을 만들 때 @Controller : Controller에 의해서 요청되는 모델관련 빈을 
+		만들 때 @Repository : 자원 관련 빈을 만들 때 @Service : 요청 -> Filter -> DispathcerServlet(Controller) 
+		-> ->@Controller(model) -> HandlerMapping (요청분석) -> 모델이 실행 -> -> @Service(트랜젝션 
+		처리) -> @Repository(Dao) -> Database처리 (SqlSessionFactoryBean) @RestController 
+		: RestFulAPI : json을 서비스 하기 위해서 많이 사용함. @ControllerAdvice : AOP에서 공통관심사항을 
+		Advice라 했다. Controller단에서 Advice를 적용하고 싶을 때 사용 한다. 예) 예외처리에 주로 사용함. -->
+	<context:component-scan
+		base-package="kr.co.kosmo.mvc" />
+
+	<mvc:annotation-driven />
+	<mvc:resources location="/resources/"
+		mapping="/resources/**" />
+
+	<!-- DataSource 설정 및 MyBatis설정 -->
+	<!-- DataSource : JNDI -->
+	<bean id="dataSource"
+		class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiName" value="java:comp/env/jdbc/myora" />
+	</bean>
+
+	<!-- Transactional AOP 설정 -->
+	<bean id="tm"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<tx:annotation-driven transaction-manager="tm" />
+
+	<!-- MyBatis SqlSessionFactoryBean에서 설정을 한다. -->
+	<bean id="factoryBean"
+		class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="configLocation"
+			value="classpath:kr/co/kosmo/mvc/config/config.xml" />
+		<property name="mapperLocations"
+			value="classpath*:kr/co/kosmo/mvc/mapper/*.xml" />
+	</bean>
+
+	<!-- Spring 제공 하는 SqlSessionTemplate -->
+	<bean id="ss" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="factoryBean" />
+	</bean>
+	<!-- DataSource 설정 및 MyBatis설정 끝 <bean id="membeDao" class="kr.co.kosmo.mvc.dao.MemberDao"> 
+		<property name="ss" ref="ss"></property> </bean> -->
+
+	<!-- fileupload를 위한 resolver 등록 fileupload CommonsMultipartResolver 추가해야 
+		한다. common-fileupload.jar -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver" />
+
+	<!-- mail 설정 -->
+	<bean id="mailSender"
+		class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<property name="host" value="smtp.naver.com" />
+		<property name="port" value="465" />
+		<!-- 내가 보내기 위해 로그인할 아이디 비번 -->
+		<property name="username" value="myspring1004@naver.com" />
+		<property name="password" value="mymy1004!" />
+		<property name="defaultEncoding" value="utf-8" />
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.debug">true</prop>
+				<prop key="mail.smtp.starttls.enable">true</prop>
+				<prop key="mail.smtps.ssl.checkserveridentity">true</prop>
+				<prop key="mail.smtp.auth">true</prop>
+				<prop key="mail.smtps.ssl.trust">*</prop>
+				<prop key="mail.smtp.ssl.protocols">TLSv1.2</prop>
+				<!-- 보안 -->
+				<prop key="mail.smtp.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- tiles 설정 -->
+	<bean id="tilesViewResolver"
+		class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.tiles3.TilesView" />
+		<property name="order" value="0" /><!-- 0순위 -->
+	</bean>
+	<bean id="tilesConfigurer"
+		class="org.springframework.web.servlet.view.tiles3.TilesConfigurer">
+		<property name="definitions">
+			<list>
+				<value>/WEB-INF/tiles/tiles-definitions.xml</value>
+			</list>
+		</property>
+	</bean>
+
+	<!-- View의 타입 => viewResolver 설정 /WEB-INF/views/[hello].jsp -->
+
+	<!-- View 형태 결정 -->
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/views/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="1" /><!-- 1순위 -->
+	</bean>
+</beans>
+
+
+
+
+
+
+

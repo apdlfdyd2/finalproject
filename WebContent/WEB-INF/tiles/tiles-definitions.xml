@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+<tiles-definitions>
+	<definition name="defaultTemplate" template="/WEB-INF/template/default/template.jsp">
+
+		<put-attribute name="header" value="/WEB-INF/template/default/header.jsp"/>
+		<put-attribute name="footer" value="/WEB-INF/template/default/footer.jsp"/>
+
+		<put-attribute name="sidebar" value="/WEB-INF/template/default/sidebar.jsp"/>
+
+		<put-attribute name="carousel" value="/WEB-INF/template/default/carousel.jsp"/>
+		<put-attribute name="search" value="/WEB-INF/template/default/search.jsp"/>
+		<put-attribute name="hotplace" value="/WEB-INF/template/default/hotplace.jsp"/>
+		<put-attribute name="newsletter" value="/WEB-INF/template/default/newsletter.jsp"/>
+		<put-attribute name="recommen" value="/WEB-INF/template/default/recommen.jsp"/>
+		<put-attribute name="video" value="/WEB-INF/template/default/video.jsp"/>
+		<put-attribute name="variation" value="/WEB-INF/template/default/variation.jsp"/>
+		<put-attribute name="review" value="/WEB-INF/template/default/review.jsp"/>
+		<put-attribute name="reviewDetail" value="/WEB-INF/template/default/reviewDetail.jsp"/>
+		<put-attribute name="searchbar" value="/WEB-INF/template/default/searchbar.jsp"/>
+	</definition>
+	<definition name="*/*" extends="defaultTemplate">
+		<put-attribute name="body" value="/WEB-INF/views/{1}/{2}.jsp"/>
+	</definition>
+	<definition name="*/popup*">
+		<put-attribute name="test" value="/WEB-INF/views/.jsp"/>
+	</definition>
+</tiles-definitions>

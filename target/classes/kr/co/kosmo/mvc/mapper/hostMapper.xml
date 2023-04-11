@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="host">
+
+	<insert id="addhost" parameterType="hvo">
+		Insert Into host_semi
+		Values(host_semi_seq.nextVal,#{hid},#{hpwd},#{hname},#{hphone},#{haddr},#{hemail},#{hduns},#{haccount},#{hnum},sysdate)
+	</insert>
+
+	<!-- Login -->
+	<select id="hlogin" parameterType="hvo" resultType="hvo">
+		select
+		hno,hid,hname from host_semi where hid=#{hid} and hpwd=#{hpwd}
+	</select>
+	<!-- Loginchk -->
+	<select id="hloginchk" parameterType="hvo" resultType="int">
+		select
+		count(*) from host_semi where hid=#{hid} and hpwd=#{hpwd}
+	</select>
+
+	<!-- MyPage -->
+	<select id="hostpage" parameterType="String" resultType="hvo">
+		select hpwd,hname,hphone,haddr,hemail,hduns,haccount from host_semi
+		where hid=#{hid}
+	</select>
+
+	<!-- update -->
+	<update id="uphost" parameterType="hvo">
+		update host_semi set
+		hpwd=#{hpwd},
+		hname=#{hname},
+		hphone=#{hphone},
+		haddr=#{haddr},
+		hemail=#{hemail}
+		where
+		hid=#{hid}
+	</update>
+
+	<!-- idCheck -->
+	<select id="hidchk" parameterType="String" resultType="int">
+		select
+		count(*) from host_semi where hid=#{hid}
+	</select>
+
+	<!-- delete -->
+	<delete id="delhost" parameterType="String">
+		delete from host_semi where
+		hid=#{hid}
+	</delete>
+</mapper>

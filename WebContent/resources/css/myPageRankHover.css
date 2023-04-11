@@ -1,0 +1,35 @@
+@charset "EUC-KR";
+.grade figure:hover img {
+	opacity: 10;
+	-webkit-animation: flash 3.0s;
+	animation: flash 3.0s;
+}
+@-webkit-keyframes flash {
+	0% {
+		opacity: .1;
+	}
+	30%{
+		opacity: 100;
+	}
+	70%{
+		opacity: .1;
+	}
+	
+	100% {
+		opacity: 100;
+	}
+}
+@keyframes flash {
+	0% {
+		opacity: .1;
+	}
+	50%{
+		opacity: 100;
+	}
+	70%{
+		opacity: .1;
+	}
+	100% {
+		opacity: 10;
+	}
+}

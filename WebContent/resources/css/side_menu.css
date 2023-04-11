@@ -1,0 +1,7 @@
+@charset "EUC-KR";
+
+/*quick_menu*/
+.side_menu {position:fixed; right:0; top:200px; width:110px; background:#fff; border-radius: 10px; border: 1px solid #ccc;z-index: 3;}
+.side_menu li{border-bottom: 1px solid #ccc;}
+.side_menu li:last-child{border: none;}
+.side_menu li a {display: block; padding: 15px; text-align: center;}

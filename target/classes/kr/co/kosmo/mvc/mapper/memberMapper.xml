@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="member">
+	<!-- insert -->
+	<insert id="addmem" parameterType="memvo">
+		Insert Into member_semi
+		Values(member_semi_seq.nextVal,#{mid},#{mpwd},#{mname},#{mjumin},#{mphone},#{maddr},#{memail},#{mcall},#{mgrade},#{mpoint},#{mno},sysdate,#{mcharge},#{mmbti})
+	</insert>
+	<!-- idCheck & AccountExistChk -->
+	<select id="idchk" parameterType="String" resultType="int">
+		select
+		count(*) from member_semi where mid=#{mid}
+	</select>
+	<!-- =============== -->
+	<!-- Login -->
+	<select id="login" parameterType="memvo" resultType="memvo">
+		select
+		mnum,mid,mname,memail from member_semi where mid=#{mid} and mpwd=#{mpwd}
+	</select>
+	<!-- Login : 카카오API적용 -->
+	<select id="kakaologin" parameterType="memvo" resultType="memvo">
+		select mnum,mid,mname,memail from member_semi where mname=#{mname} and memail=#{memail}
+	</select>
+	<!-- Loginchk -->
+	<select id="loginchk" parameterType="memvo" resultType="int">
+		select
+		count(*) from member_semi where mid=#{mid} and mpwd=#{mpwd}
+	</select>
+	<!-- =============== -->
+	<!-- update -->
+	<update id="upmem" parameterType="memvo">
+		update member_semi set
+		mpwd=#{mpwd},
+		mname=#{mname},
+		mphone=#{mphone},
+		maddr=#{maddr},
+		memail=#{memail}
+		where
+		mnum=#{mnum}
+	</update>
+	<!-- =============== -->
+	<!-- delete -->
+	<delete id="delmem" parameterType="int">
+		delete from member_semi where
+		mnum=#{mnum}
+	</delete>
+
+	<!-- ============================================================ -->
+	<!-- MBTI -->	
+	<!-- update Mbti-->
+	<update id="upmbti" parameterType="memvo">
+		update member_semi set
+		mmbti=#{mmbti}
+		where mid=#{mid}
+	</update>
+
+	<!-- mbtitype check-->
+	<select id="mbtichk" parameterType="String" resultType="int">
+		select mbtinum from mbti where mbtitype=#{mbtitype}
+	</select>
+	<!-- ============================================================ -->
+	<!-- login logging mapper -->
+	<insert id="logger_in" parameterType="logvo">
+		insert into loginlog_semi
+		VALUES(loginlog_semi_seq.nextval,#{midn},#{reip},#{uagent},#{status},sysdate,#{runtime})
+	</insert>
+
+	<!-- ============================================================ -->
+	<!-- mypage1 : member , membership -->
+	<resultMap type="mshipvo" id="mbsmem">
+		<id property="mbsno" column="mbsno" javaType="int" />
+		<result property="mbsname" column="mbsname" />
+		<result property="mbspoint" column="mbspoint" />
+		<collection property="member" javaType="java.util.List"
+			ofType="memvo">
+			<result property="mid" column="mid" />
+			<result property="mname" column="mname" />
+			<result property="mphone" column="mphone" />
+			<result property="memail" column="memail" />
+			<result property="mdate" column="mdate" />
+			<result property="maddr" column="maddr" />
+			<result property="mpoint" column="mpoint" />
+			<result property="mcharge" column="mcharge" />
+			<result property="gender" column="gender" />
+			<result property="mage" column="mage" />
+		</collection>
+	</resultMap>
+	<select id="membermbs" parameterType="int" resultMap="mbsmem">
+		select
+		m.mid,m.mname,m.mphone,m.memail,m.mdate,m.maddr,m.mpoint,m.mcharge,
+		decode(substr(m.mjumin,8,1),1,'남자',3,'남자','여자')as gender,
+		case when
+		to_char(sysdate, 'mm') - to_char(to_date(substr(m.mjumin, 1, 6)),
+		'mm')
+		= 0 and to_char(sysdate, 'dd') - to_char(to_date(substr(m.mjumin,
+		1,
+		6)), 'dd') >= 0 or to_char(sysdate, 'mm') -
+		to_char(to_date(substr(m.mjumin, 1, 6)), 'mm') > 0 then
+		to_char(sysdate,'yyyy') - to_char(to_date(substr(m.mjumin, 1,
+		6)),'yyyy') else to_char(sysdate,'yyyy') -
+		to_char(to_date(substr(m.mjumin, 1, 6)),'yyyy') - 1 end as mage,
+		mbs.mbsname
+		from member_semi m, membership_semi mbs
+		where
+		m.mgrade=mbs.mbsno and m.mnum=#{mnum}
+	</select>
+
+	<!-- ============================================================ -->
+	<!-- update : point&mcharge -->
+	<!-- reserv + ch + mempoint -->
+	<update id="mpoint" parameterType="memvo">
+		update member_semi set
+		mpoint=mpoint+#{mpoint},
+		mcharge=mcharge+#{mcharge}
+		where mnum=#{mnum}
+	</update>
+
+	<resultMap type="mshipvo" id="mbspoint">
+		<id property="mbsno" column="mbsno" javaType="int" />
+		<result property="mbspoint" column="mbspoint" />
+		<collection property="member" javaType="java.util.List"
+			ofType="memvo">
+			<result property="mid" column="mid" />
+			<result property="mpoint" column="mpoint" />
+		</collection>
+	</resultMap>
+	<select id="pluspoint" parameterType="int" resultMap="mbspoint">
+		select
+		mbs.mbspoint,m.mpoint from member_semi
+		m,membership_semi mbs
+		where
+		m.mgrade=mbs.mbsno and m.mnum=#{mnum}
+	</select>
+	<!-- ============================================================ -->
+	<!-- update : membership -->
+	<update id="updatembs" parameterType="int">
+		UPDATE member_semi
+		SET mgrade = CASE
+		WHEN mcharge <![CDATA[<]]>=
+		500000 THEN 10
+		WHEN mcharge <![CDATA[<]]>=
+		1000000 THEN 20
+		WHEN mcharge <![CDATA[<]]>=
+		5000000 THEN 30
+		ELSE 40
+		END
+		WHERE mcharge IS NOT NULL and mnum = #{mnum}
+	</update>
+	<!-- chart : membership -->
+	<resultMap type="mshipvo" id="chartMbsPercentage">
+		<id property="mbsno" column="mbsno" javaType="int" />
+		<result property="mbsname" column="mbsname" />
+		<result property="mbsmin" column="mbsmin" />
+		<result property="mbsmax" column="mbsmax" />
+		<collection property="member" javaType="java.util.List"
+			ofType="memvo">
+			<result property="mgrade" column="mgrade" />
+			<result property="percentage" column="percentage" />
+		</collection>
+	</resultMap>
+	<select id="chartmbs" parameterType="int" resultMap="chartMbsPercentage">
+		select m.mgrade,mbs.mbsname,
+		(CASE
+		WHEN m.mgrade=10 THEN
+		round((mcharge-mbs.mbsmin)/(mbs.mbsmax-mbs.mbsmin)*100)
+		WHEN m.mgrade=20 THEN
+		round((mcharge-mbs.mbsmin)/(mbs.mbsmax-mbs.mbsmin)*100)
+		WHEN m.mgrade=30 THEN
+		round((mcharge-mbs.mbsmin)/(mbs.mbsmax-mbs.mbsmin)*100)
+		WHEN m.mgrade=40 THEN (CASE
+		WHEN ((mcharge-mbs.mbsmin)/(mbs.mbsmax-mbs.mbsmin)*100)<![CDATA[>]]>=100 THEN 100
+		ELSE round((mcharge-mbs.mbsmin)/(mbs.mbsmax-mbs.mbsmin)*100)
+		END
+		)
+		END
+		) percentage
+		from member_semi m,membership_semi mbs
+		where m.mgrade=mbs.mbsno and mnum=#{mnum}
+	</select>
+	<!-- ============================================================ -->
+</mapper>
